@@ -20,10 +20,13 @@ namespace MichaelLibrary
 
         private TimeSpan LastKeyPressedTimer = TimeSpan.Zero;
 
+        private bool shouldStartTyping = false;
+
         private Cursor Cursor { get; set; }
 
         public Color BorderColor { get; set; }
         public Color InnerColor { get; set; }
+        public Color OldInnerColor { get; set; }
 
         private KeyboardState oldKeyboard;
 
@@ -40,14 +43,26 @@ namespace MichaelLibrary
 
         public string Text => TextBuilder.ToString();
 
-        public TextBox(GraphicsDevice graphics, Rectangle area, SpriteFont font, Color borderColor, Color innerColor, Color textColor,bool isPassword)
+        public TextBox(GraphicsDevice graphics, Rectangle area, SpriteFont font, Color borderColor, Color innerColor, Color textColor, bool isPassword, bool preserveHeight)
                : base(new Vector2(area.X, area.Y), Color.White)
         {
+            Font = font;
+
             TextColor = textColor;
 
             IsPasswordMode = isPassword;
 
-            Cursor = new Cursor(new Rectangle(area.X, area.Y, 1, area.Height), true);
+            if (preserveHeight)
+            {
+                Cursor = new Cursor(Pixel, new Rectangle(area.X, area.Y, 1, area.Height), true, false);
+                Area = area;
+            }
+            else
+            {
+                Cursor = new Cursor(Pixel, new Rectangle(area.X, area.Y, 1, FindHeight()), true, false);
+
+                Area = new Rectangle(area.X, area.Y, area.Width, FindHeight());
+            }
 
             OriginalX = area.X;
 
@@ -56,18 +71,27 @@ namespace MichaelLibrary
                 Pixel = new Texture2D(graphics, 1, 1);
                 Pixel.SetData(new Color[] { Color.White });
             }
-
-            Area = area;
-            Font = font;
-
+            
             BorderColor = borderColor;
             InnerColor = innerColor;
+            OldInnerColor = InnerColor;
         }
 
-        public void CalculateStars(Keys lastpressedKey)
+        private int FindHeight()
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+
+            for (int i = 32; i < 126; i++)
+            {
+                stringBuilder.Append((char)i);
+            }
+
+            return (int)(Font.MeasureString(stringBuilder).Y);
+        }
+
+        private void CalculateStars(Keys lastpressedKey)
         {
             //Not necessary function
-
             var size = Font.MeasureString(lastKeyPressed.ToString());
             var starSize = Font.MeasureString("*");
 
@@ -81,11 +105,42 @@ namespace MichaelLibrary
             }
         }
 
+        private void Hover(MouseState mouse)
+        {
+            if (Area.Contains(mouse.X, mouse.Y))
+            {
+                InnerColor = Color.LightBlue;
+            }
+            else
+            {
+                InnerColor = OldInnerColor;
+            }
+        }
+
         Keys lastKeyPressed = Keys.None;
         public override void Update(GameTime gameTime, GraphicsDevice graphicsDevice = null)
         {
             KeyboardState keyboard = Keyboard.GetState();
+            MouseState mouse = Mouse.GetState();
 
+            Hover(mouse);
+            Cursor.Update(gameTime);
+
+            if (Area.Contains(mouse.X, mouse.Y) && mouse.LeftButton == ButtonState.Pressed)
+            {
+                Cursor.OverallVisibility = true;
+                shouldStartTyping = true;
+            }
+            if (!Area.Contains(mouse.X, mouse.Y) && mouse.LeftButton == ButtonState.Pressed)
+            {
+                Cursor.OverallVisibility = false;
+                shouldStartTyping = false;
+            }
+
+            if (!shouldStartTyping)
+            {
+                return;
+            }
             //Handle cursor movement
             bool isTextUpdated = false;
 
@@ -229,13 +284,13 @@ namespace MichaelLibrary
                 {
                     textSize = Font.MeasureString(PasswordBuilder.ToString());
                 }
-                Cursor = new Cursor(new Rectangle((int)(Position.X + textSize.X), Cursor.CursorArea.Y, Cursor.CursorArea.Width, Cursor.CursorArea.Height), true);
+                Cursor = new Cursor(Pixel, new Rectangle((int)(Position.X + textSize.X), Cursor.CursorArea.Y, Cursor.CursorArea.Width, Cursor.CursorArea.Height), true, true);
             }
 
             oldKeyboard = keyboard;
         }
 
-        public bool RemoveLetter(StringBuilder stringBuilder)
+        private bool RemoveLetter(StringBuilder stringBuilder)
         {
             if (stringBuilder.Length - 1 < 0)
             {
@@ -253,7 +308,7 @@ namespace MichaelLibrary
             spriteBatch.Draw(Pixel, Area, InnerColor);
 
             //Draw cursor
-            spriteBatch.Draw(Pixel, Cursor.CursorArea, BorderColor);
+            Cursor.Draw(spriteBatch);
 
             if (!IsPasswordMode)
             {
