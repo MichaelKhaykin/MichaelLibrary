@@ -24,7 +24,7 @@ namespace TestProject
             SpriteFont font = Content.Load<SpriteFont>("SpriteFont");
 
             usernameTextBox = new TextBox(graphics, new Rectangle(10, 200, 780, 30), font, Color.Black, Color.White, Color.Red, false, false);
-            passwordTextBox = new TextBox(graphics, new Rectangle(10, 400, 780, 30), font, Color.Black, Color.White, Color.Red, true, false);
+            passwordTextBox = new TextBox(graphics, new Rectangle(10, 400, 780, 30), font, Color.Black, Color.White, Color.Red, true, true);
 
             button = new Button(Content.Load<Texture2D>("BROLAF"), new Vector2(Graphics.Viewport.Width / 2, Graphics.Viewport.Height / 2), Color.Red, new Vector2(.5f), Game1.pixel);
             button.LayerDepth = 1;
@@ -39,6 +39,7 @@ namespace TestProject
         {
             usernameTextBox.Update(gameTime);
             passwordTextBox.Update(gameTime);
+            
 
             MouseState mouse = Mouse.GetState();
             //if (button.IsClicked(mouse))

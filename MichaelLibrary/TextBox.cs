@@ -30,18 +30,27 @@ namespace MichaelLibrary
 
         private KeyboardState oldKeyboard;
 
+        private bool isShiftPressed = false;
+
         private int OriginalX { get; set; }
 
         private StringBuilder TextBuilder = new StringBuilder();
         private StringBuilder PasswordBuilder = new StringBuilder();
 
         private bool IsPasswordMode { get; set; } = false;
-
-        private int capsLockOffset = 0;
-
+        
         private Color TextColor { get; set; }
 
         public string Text => TextBuilder.ToString();
+
+        private readonly Keys[] IgnoredKeys = new Keys[] { Keys.CapsLock, Keys.Up , Keys.Down , Keys.Left , Keys.Right , Keys.LeftWindows
+          , Keys.RightWindows , Keys.LeftControl , Keys.RightControl , Keys.RightAlt , Keys.LeftAlt , Keys.Tab
+          , Keys.Home , Keys.BrowserHome , Keys.End , Keys.PageUp , Keys.PageDown , Keys.Escape , Keys.Insert
+          , Keys.F1 , Keys.F2 , Keys.F3 , Keys.F4 , Keys.F5 , Keys.F6 , Keys.F7 , Keys.F8 , Keys.F9 , Keys.F10
+          , Keys.F11 , Keys.F12 , Keys.Pause , Keys.PrintScreen, Keys.CapsLock };
+
+        private readonly Keys[] NumKeys = new Keys[] { Keys.D0, Keys.D1, Keys.D2, Keys.D3, Keys.D4, Keys.D5,
+        Keys.D6, Keys.D7, Keys.D8, Keys.D9};
 
         public TextBox(GraphicsDevice graphics, Rectangle area, SpriteFont font, Color borderColor, Color innerColor, Color textColor, bool isPassword, bool preserveHeight)
                : base(new Vector2(area.X, area.Y), Color.White)
@@ -117,6 +126,11 @@ namespace MichaelLibrary
             }
         }
 
+        public void ClearText()
+        {
+            TextBuilder.Clear();
+        }
+
         Keys lastKeyPressed = Keys.None;
         public override void Update(GameTime gameTime, GraphicsDevice graphicsDevice = null)
         {
@@ -125,6 +139,7 @@ namespace MichaelLibrary
 
             Hover(mouse);
             Cursor.Update(gameTime);
+
 
             if (Area.Contains(mouse.X, mouse.Y) && mouse.LeftButton == ButtonState.Pressed)
             {
@@ -165,6 +180,23 @@ namespace MichaelLibrary
                 holdDownTimer = TimeSpan.Zero;
             }
 
+            if (newKeys.Contains(Keys.LeftShift) || newKeys.Contains(Keys.RightShift))
+            {
+                isShiftPressed = true;
+            }
+            else
+            {
+                isShiftPressed = false;
+            }
+
+            foreach (var ignoredKey in IgnoredKeys)
+            {
+                if (ignoredKey == lastKeyPressed)
+                {
+                    return;
+                }
+            }
+
             if (Cursor.CursorArea.X + Cursor.CursorArea.Width + Font.MeasureString(lastKeyPressed.ToString()).X >= Area.X + Area.Width)
             {
                 Cursor.IsAbleToBeMoved = false;
@@ -181,11 +213,6 @@ namespace MichaelLibrary
                     holdDownTimer += gameTime.ElapsedGameTime;
                     if (holdDownTimer.TotalMilliseconds > 80)
                     {
-                        if ((int)lastKeyPressed >= 65 && (int)lastKeyPressed <= 90)
-                        {
-                            capsLockOffset = keyboard.CapsLock ? 0 : 32;
-                        }
-
                         if (lastKeyPressed == Keys.Back)
                         {
                             RemoveLetter(TextBuilder);
@@ -206,7 +233,7 @@ namespace MichaelLibrary
                             {
                                 if (Cursor.IsAbleToBeMoved)
                                 {
-                                    TextBuilder.Append((char)((int)lastKeyPressed + capsLockOffset));
+                                    TextBuilder.Append((char)((int)lastKeyPressed + 32));
                                 }
                             }
 
@@ -219,17 +246,12 @@ namespace MichaelLibrary
                         }
 
                         holdDownTimer = TimeSpan.Zero;
-                    }
+                   }
                 }
             }
 
             foreach (var key in newKeys)
             {
-                if ((int)key >= 65 && (int)key <= 90)
-                {
-                    capsLockOffset = keyboard.CapsLock ? 0 : 32;
-                }
-
                 if (key == Keys.Back && oldKeyboard.IsKeyUp(Keys.Back))
                 {
                     RemoveLetter(TextBuilder);
@@ -254,7 +276,14 @@ namespace MichaelLibrary
                     {
                         if (Cursor.IsAbleToBeMoved)
                         {
-                            TextBuilder.Append((char)((int)key + capsLockOffset));
+                            if (isShiftPressed || NumKeys.Contains(key))
+                            {
+                                TextBuilder.Append((char)((int)key));
+                            }
+                            else
+                            {
+                                TextBuilder.Append((char)((int)key + 32));
+                            }
                         }
                     }
 
