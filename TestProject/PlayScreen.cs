@@ -39,7 +39,17 @@ namespace TestProject
         {
             usernameTextBox.Update(gameTime);
             passwordTextBox.Update(gameTime);
-            
+
+            KeyboardState keyboard = Keyboard.GetState();
+
+            if (keyboard.IsKeyDown(Keys.A))
+            {
+                usernameTextBox.IsReadOnly = true;
+            }
+            else if(keyboard.IsKeyDown(Keys.L))
+            {
+                usernameTextBox.IsReadOnly = false;
+            }
 
             MouseState mouse = Mouse.GetState();
             //if (button.IsClicked(mouse))

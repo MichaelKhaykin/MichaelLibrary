@@ -18,6 +18,8 @@ namespace MichaelLibrary
         private TimeSpan KeyTime = TimeSpan.FromMilliseconds(200);
         private TimeSpan ElapsedKeyTime = TimeSpan.Zero;
 
+        public bool IsReadOnly { get; set; } = false;
+
         private TimeSpan LastKeyPressedTimer = TimeSpan.Zero;
 
         private bool shouldStartTyping = false;
@@ -128,7 +130,13 @@ namespace MichaelLibrary
 
         public void ClearText()
         {
+            Cursor = new Cursor(Pixel, new Rectangle(0, Area.Y, 1, Area.Height), true, false);
+
             TextBuilder.Clear();
+            if (IsPasswordMode)
+            {
+                PasswordBuilder.Clear();
+            }
         }
 
         Keys lastKeyPressed = Keys.None;
@@ -137,10 +145,16 @@ namespace MichaelLibrary
             KeyboardState keyboard = Keyboard.GetState();
             MouseState mouse = Mouse.GetState();
 
+            if (IsReadOnly)
+            {
+                InnerColor = Color.Gray;
+                return;
+            }
+
             Hover(mouse);
             Cursor.Update(gameTime);
 
-
+          
             if (Area.Contains(mouse.X, mouse.Y) && mouse.LeftButton == ButtonState.Pressed)
             {
                 Cursor.OverallVisibility = true;
